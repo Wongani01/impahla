@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Impahla app</string>
+    <string name="title_activity_main">Impahla app</string>
+    <string name="package_name">com.mphatso.registry</string>
+    <string name="custom_url_scheme">com.mphatso.registry</string>
+</resources>
