@@ -674,3 +674,66 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
   .admin-table th, .admin-table td { padding: 11px 12px; }
 }
 
+/* ------------------------------ Events & contributions wiring ------------------------------ */
+.heading-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.heading-actions .secondary-button, .heading-actions .primary-button { min-height: 37px; }
+
+.form-field .form-select { width: 100%; min-height: 38px; padding: 9px 11px; border: 1px solid #e8e1d9; border-radius: 8px; outline: none; color: #443743; background: #fffefa; font-size: 12px; transition: border .15s ease, box-shadow .15s ease; }
+.form-field .form-select:focus { border-color: #b59eaf; box-shadow: 0 0 0 3px #a68ba211; }
+.form-field input[type='time'] { width: 100%; min-height: 38px; padding: 9px 11px; border: 1px solid #e8e1d9; border-radius: 8px; outline: none; color: #443743; background: #fffefa; font-size: 12px; }
+.form-field input[type='time']:focus { border-color: #b59eaf; box-shadow: 0 0 0 3px #a68ba211; }
+.form-field select:disabled { opacity: .6; cursor: not-allowed; }
+
+.event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+.event-card { display: flex; min-width: 0; flex-direction: column; padding: 0; overflow: hidden; border: 1px solid #ebe5dd; border-radius: 14px; background: var(--white); text-align: left; cursor: pointer; transition: box-shadow .18s ease, transform .18s ease; }
+.event-card:hover { box-shadow: 0 14px 30px #3c263615; transform: translateY(-2px); }
+.event-card-cover { position: relative; display: flex; min-height: 128px; align-items: flex-start; justify-content: flex-end; padding: 10px; background: #674b5b center / cover no-repeat; }
+.event-card-cover-fallback { position: absolute; inset: 0; display: grid; place-items: center; color: #f0d9b4; font-family: Georgia, 'Times New Roman', serif; font-size: 16px; letter-spacing: .3px; background: linear-gradient(140deg, #523b4d, #44303f); }
+.event-card-cover .status-pill { position: relative; z-index: 1; }
+.event-card-body { display: flex; min-width: 0; flex-direction: column; gap: 6px; padding: 13px 15px 15px; }
+.event-category-tag { color: #a0774a; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
+.event-card-title { overflow: hidden; color: #3e2f3d; font-family: Georgia, 'Times New Roman', serif; font-size: 16px; font-weight: 400; letter-spacing: -.3px; text-overflow: ellipsis; white-space: nowrap; }
+.event-card-host { color: #8c828a; font-size: 12px; }
+.event-card-meta { display: flex; min-width: 0; align-items: center; gap: 6px; overflow: hidden; color: #877d85; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.event-card-meta svg { width: 13px; height: 13px; flex: 0 0 auto; color: #a3815a; }
+
+.status-pill.open { color: #607457; background: #edf2e8; }
+.status-pill.closed { color: #8a7f74; background: #f0ece5; }
+.status-pill.cancelled { color: #9a6a6a; background: #f6ebeb; }
+.status-pill.pledged { color: #a27742; background: #f7f0e3; }
+.status-pill.paid { color: #4b6b52; background: #e9f2ec; }
+.status-pill.pending_verification { color: #8a6a2f; background: #f6efdd; }
+.status-pill.confirmed { color: #3f6f74; background: #e8f2f4; }
+.status-pill.delivered { color: #4d6383; background: #eaeef5; }
+
+.discover-controls { margin-bottom: 15px; border: 1px solid #ebe5dd; border-radius: 13px; background: var(--white); }
+.discover-search { width: min(100%, 440px); }
+
+.table-status-select { min-height: 32px; min-width: 150px; padding: 0 8px; font-size: 11px; }
+.admin-table td .admin-muted svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 4px; color: #a3815a; }
+
+.detail-hero { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.45fr); overflow: hidden; border: 1px solid #ebe5dd; border-radius: 15px; background: var(--white); }
+.detail-hero-cover { position: relative; min-height: 260px; background: #674b5b center / cover no-repeat; }
+.detail-hero-body { display: flex; flex-direction: column; gap: 13px; padding: 20px 22px; }
+.detail-hero-body .status-pill { align-self: flex-start; }
+.detail-facts { display: flex; flex-direction: column; gap: 9px; }
+.detail-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.event-fact { display: flex; align-items: center; gap: 8px; margin: 0; color: #6f6470; font-size: 12px; }
+.event-fact svg { width: 14px; height: 14px; flex: 0 0 auto; color: #a3815a; }
+.event-description { margin: 0; color: #6f6470; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+.event-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.event-facts-card { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; }
+.event-facts-card .event-fact svg { color: #a3815a; }
+
+@media (max-width: 900px) {
+  .detail-hero { grid-template-columns: minmax(0, 1fr); }
+  .detail-hero-cover { min-height: 190px; }
+}
+@media (max-width: 680px) {
+  .event-grid { grid-template-columns: minmax(0, 1fr); }
+  .event-facts { grid-template-columns: minmax(0, 1fr); }
+  .heading-actions { width: 100%; }
+  .discover-search { width: 100%; }
+  .table-status-select { min-width: 130px; }
+}
+

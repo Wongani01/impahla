@@ -1,26 +1,36 @@
 import { NextResponse } from 'next/server'
-import { randomUUID } from 'node:crypto'
-import { apiError, readString } from '@/lib/api'
-import { getCurrentUser, checkDatabase } from '@/lib/auth/session'
-import { db } from '@/lib/db'
-import { events } from '@/lib/db/schema'
-import { fallbackStore } from '@/lib/db/fallback-store'
+import { apiError } from '@/lib/api'
+import { getCurrentUser } from '@/lib/auth/session'
+import {
+  createEvent,
+  getEventsByPlanner,
+  getOpenEvents,
+  parseEventInput,
+  searchEvents,
+} from '@/lib/events-service'
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getCurrentUser()
   if (!user) return apiError('Please sign in.', 401)
 
-  const online = await checkDatabase().catch(() => false)
-  if (online) {
-    try {
-      const rows = await db.select().from(events)
-      return NextResponse.json({ events: rows })
-    } catch {
-      // fallback
-    }
-  }
+  const params = new URL(request.url).searchParams
+  const mine = params.get('mine')
+  const open = params.get('open')
+  const query = params.get('q') ?? ''
 
-  return NextResponse.json({ events: fallbackStore.getEvents() })
+  try {
+    if (mine) {
+      return NextResponse.json({ events: await getEventsByPlanner(user.id) })
+    }
+    if (open || query) {
+      const events = query ? await searchEvents(query) : await getOpenEvents()
+      return NextResponse.json({ events })
+    }
+    return NextResponse.json({ events: await getOpenEvents() })
+  } catch (error) {
+    console.error('list events failed', error)
+    return apiError('Could not load events. Is the database running?', 500)
+  }
 }
 
 export async function POST(request: Request) {
@@ -30,74 +40,14 @@ export async function POST(request: Request) {
     return apiError('Only event planners, bride, and groom can create events.', 403)
   }
 
-  let body: Record<string, unknown>
+  const parsed = parseEventInput(await request.json().catch(() => null))
+  if (!parsed.ok) return apiError(parsed.error, 400)
+
   try {
-    body = (await request.json()) as Record<string, unknown>
-  } catch {
-    return apiError('Invalid request body.')
+    const event = await createEvent(parsed.value, user.id)
+    return NextResponse.json({ event }, { status: 201 })
+  } catch (error) {
+    console.error('create event failed', error)
+    return apiError('Could not create this event.', 500)
   }
-
-  const eventName = readString(body?.eventName)
-  const eventType = readString(body?.eventType) || 'Kitchen Party'
-  const eventDate = readString(body?.eventDate) || '2026-11-28'
-  const location = readString(body?.location) || 'Lusaka, Zambia'
-  const description = readString(body?.description) || ''
-  const hostName = readString(body?.hostName) || user.name
-  const eventTime = readString(body?.eventTime) || '14:00'
-  const venue = readString(body?.venue) || ''
-  const contactInfo = readString(body?.contactInfo) || ''
-  const expectedAttendees = Number(body?.expectedAttendees ?? 50)
-  const coverImage = typeof body?.coverImage === 'string' ? body.coverImage : null
-
-  if (!eventName) return apiError('Event name is required.')
-
-  const id = randomUUID()
-  const online = await checkDatabase().catch(() => false)
-
-  if (online) {
-    try {
-      await db.insert(events).values({
-        id,
-        plannerId: user.id,
-        plannerName: user.name,
-        eventName,
-        description,
-        category: eventType,
-        eventType,
-        hostName,
-        eventDate,
-        eventTime,
-        venue,
-        location,
-        contactInfo,
-        expectedAttendees,
-        coverImage,
-        status: 'active',
-      })
-      return NextResponse.json({ event: { id, plannerId: user.id, plannerName: user.name, eventName, description, category: eventType, eventType, hostName, eventDate, eventTime, venue, location, contactInfo, expectedAttendees, coverImage, status: 'active' } }, { status: 201 })
-    } catch {
-      // fallback
-    }
-  }
-
-  const eventObj = fallbackStore.saveEvent({
-    id,
-    plannerId: user.id,
-    plannerName: user.name,
-    eventName,
-    description,
-    category: eventType,
-    eventType,
-    hostName,
-    eventDate,
-    eventTime,
-    venue,
-    location,
-    contactInfo,
-    expectedAttendees,
-    coverImage,
-    status: 'active',
-  })
-
-  return NextResponse.json({ event: eventObj }, { status: 201 })
 }

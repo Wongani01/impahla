@@ -26,11 +26,9 @@ export type MemorySession = {
 export type MemoryEvent = {
   id: string
   plannerId: string
-  plannerName: string
   eventName: string
   description: string
-  category: string
-  eventType: string
+  category: 'kitchen_party' | 'bridal_shower' | 'other'
   hostName: string
   eventDate: string
   eventTime: string
@@ -39,26 +37,32 @@ export type MemoryEvent = {
   contactInfo: string
   expectedAttendees: number
   coverImage: string | null
-  status: 'active' | 'closed' | 'cancelled'
+  status: 'open' | 'closed' | 'cancelled'
   createdAt: string
 }
 
 export type MemoryContribution = {
   id: string
-  userId: string
   eventId: string
-  name: string
+  contributorId: string | null
+  contributorName: string
   phoneNumber: string
   contributionType: 'cash' | 'gift'
-  amount: number
-  paidAmount: number
-  gift: string
-  giftValue: number
+  cashAmount: number
+  giftDescription: string
+  giftValue: number | null
   quantity: number
-  status: 'promised' | 'received' | 'pledged' | 'paid' | 'pending_verification' | 'confirmed' | 'delivered' | 'cancelled'
+  giftImage: string | null
   note: string
+  contributionStatus:
+    | 'pledged'
+    | 'paid'
+    | 'pending_verification'
+    | 'confirmed'
+    | 'delivered'
+    | 'received'
+    | 'cancelled'
   date: string
-  photo: string | null
   createdAt: string
   updatedAt: string
 }
@@ -80,6 +84,7 @@ function ensureStore(): StoreData {
       const raw = fs.readFileSync(STORE_PATH, 'utf8')
       const data = JSON.parse(raw) as StoreData
       if (!data.events) data.events = []
+      if (!data.contributions) data.contributions = []
       return data
     }
   } catch (e) {
@@ -140,14 +145,17 @@ export const fallbackStore = {
   getEvents(): MemoryEvent[] {
     return ensureStore().events
   },
+  getEventById(id: string): MemoryEvent | undefined {
+    return ensureStore().events.find((e) => e.id === id)
+  },
   saveEvent(event: Omit<MemoryEvent, 'createdAt'>) {
     const store = ensureStore()
     const now = new Date().toISOString()
     const index = store.events.findIndex((e) => e.id === event.id)
     const full: MemoryEvent = {
       ...event,
-      plannerName: event.plannerName ?? 'Event Planner',
-      eventType: event.eventType ?? event.category ?? 'Kitchen Party',
+      category: event.category ?? 'kitchen_party',
+      status: event.status ?? 'open',
       createdAt: index >= 0 ? store.events[index].createdAt : now,
     }
     if (index >= 0) {
@@ -159,12 +167,15 @@ export const fallbackStore = {
     return full
   },
 
-  getContributions(userId?: string): MemoryContribution[] {
+  getContributions(contributorId?: string): MemoryContribution[] {
     const store = ensureStore()
-    if (userId) {
-      return store.contributions.filter((c) => c.userId === userId)
+    if (contributorId) {
+      return store.contributions.filter((c) => c.contributorId === contributorId)
     }
     return store.contributions
+  },
+  getContributionsByEvent(eventId: string): MemoryContribution[] {
+    return ensureStore().contributions.filter((c) => c.eventId === eventId)
   },
   saveContribution(contribution: Omit<MemoryContribution, 'createdAt' | 'updatedAt'>) {
     const store = ensureStore()
@@ -172,9 +183,13 @@ export const fallbackStore = {
     const index = store.contributions.findIndex((c) => c.id === contribution.id)
     const full: MemoryContribution = {
       ...contribution,
-      eventId: contribution.eventId ?? 'default-event',
-      paidAmount: contribution.paidAmount ?? 0,
-      status: contribution.status ?? 'received',
+      contributorId: contribution.contributorId ?? null,
+      cashAmount: contribution.cashAmount ?? 0,
+      giftDescription: contribution.giftDescription ?? '',
+      giftValue: contribution.giftValue ?? null,
+      quantity: contribution.quantity ?? 1,
+      giftImage: contribution.giftImage ?? null,
+      contributionStatus: contribution.contributionStatus ?? 'pledged',
       createdAt: index >= 0 ? store.contributions[index].createdAt : now,
       updatedAt: now,
     }

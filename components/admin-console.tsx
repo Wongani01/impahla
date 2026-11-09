@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 import { ContributionDetailsDialog } from '@/components/contribution-details-dialog'
 import { ContributionFormDialog } from '@/components/contribution-form-dialog'
-import { formatContributionDate, formatKwacha, type AdminContribution, type Contribution } from '@/lib/contribution-store'
+import { contributionStatusLabel, formatContributionDate, formatKwacha, isCashInHand, type AdminContribution, type Contribution } from '@/lib/contribution-store'
 import type { AuthUser } from '@/lib/auth/session'
 
 type Section = 'analytics' | 'contributions' | 'users' | 'content'
@@ -157,7 +157,7 @@ export function AdminConsole({ user }: { user: AuthUser }) {
   }
 
   const markReceived = async (contribution: Contribution) => {
-    const saved = await saveContribution(contribution as AdminContribution)
+    const saved = await saveContribution({ ...(contribution as AdminContribution), contributionStatus: 'received' })
     if (saved) setSelectedContribution(null)
   }
 
@@ -364,22 +364,26 @@ function ContributionsPanel({
               <tr><th>Contributor</th><th>Registry owner</th><th>Gift</th><th>Date</th><th>Amount</th><th>Status</th><th aria-label="Actions" /></tr>
             </thead>
             <tbody>
-              {contributions.map((item) => (
-                <tr key={item.id}>
-                  <td><button className="admin-cell-button" type="button" onClick={() => onSelect(item)}>{item.name}</button></td>
-                  <td><span className="admin-owner">{item.ownerName}<small>{item.ownerEmail}</small></span></td>
-                  <td className="admin-muted">{item.gift || '—'}</td>
-                  <td className="admin-muted">{formatContributionDate(item.date)}</td>
-                  <td className="admin-amount">{formatKwacha(item.amount)}</td>
-                  <td><span className={`status-pill ${item.status}`}><span className="status-dot" />{item.status === 'received' ? 'Received' : 'Promised'}</span></td>
-                  <td>
-                    <div className="admin-row-actions">
-                      {item.status === 'promised' && <button className="icon-button" type="button" title="Mark received" aria-label="Mark received" disabled={busyId === item.id} onClick={() => onMarkReceived(item)}>{busyId === item.id ? <LoaderCircle className="button-spinner" aria-hidden="true" /> : <Check aria-hidden="true" />}</button>}
-                      <button className="icon-button danger-icon" type="button" title="Delete" aria-label="Delete contribution" disabled={busyId === item.id} onClick={() => onDelete(item.id)}><Trash2 aria-hidden="true" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {contributions.map((item) => {
+                const isGift = item.contributionType === 'gift'
+                const canMarkReceived = !isCashInHand(item.contributionStatus) && item.contributionStatus !== 'cancelled'
+                return (
+                  <tr key={item.id}>
+                    <td><button className="admin-cell-button" type="button" onClick={() => onSelect(item)}>{item.contributorName}</button></td>
+                    <td><span className="admin-owner">{item.ownerName}<small>{item.ownerEmail}</small></span></td>
+                    <td className="admin-muted">{isGift ? item.giftDescription || '—' : 'Cash'}</td>
+                    <td className="admin-muted">{formatContributionDate(item.date)}</td>
+                    <td className="admin-amount">{isGift ? (item.giftValue ? formatKwacha(item.giftValue) : '—') : formatKwacha(item.cashAmount)}</td>
+                    <td><span className={`status-pill ${item.contributionStatus}`}><span className="status-dot" />{contributionStatusLabel(item.contributionStatus)}</span></td>
+                    <td>
+                      <div className="admin-row-actions">
+                        {canMarkReceived && <button className="icon-button" type="button" title="Mark received" aria-label="Mark received" disabled={busyId === item.id} onClick={() => onMarkReceived(item)}>{busyId === item.id ? <LoaderCircle className="button-spinner" aria-hidden="true" /> : <Check aria-hidden="true" />}</button>}
+                        <button className="icon-button danger-icon" type="button" title="Delete" aria-label="Delete contribution" disabled={busyId === item.id} onClick={() => onDelete(item.id)}><Trash2 aria-hidden="true" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

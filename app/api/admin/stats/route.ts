@@ -12,14 +12,20 @@ export async function GET() {
   try {
     const userRows = await db.select({ status: users.status, role: users.role }).from(users)
     const contributionRows = await db
-      .select({ status: contributions.status, amount: contributions.amount, name: contributions.name })
+      .select({
+        contributionStatus: contributions.contributionStatus,
+        cashAmount: contributions.cashAmount,
+      })
       .from(contributions)
 
     let receivedTotal = 0
     let promisedTotal = 0
     for (const row of contributionRows) {
-      if (row.status === 'received') receivedTotal += row.amount
-      else promisedTotal += row.amount
+      if (['paid', 'confirmed', 'delivered', 'received'].includes(row.contributionStatus)) {
+        receivedTotal += row.cashAmount
+      } else if (row.contributionStatus !== 'cancelled') {
+        promisedTotal += row.cashAmount
+      }
     }
 
     return NextResponse.json({

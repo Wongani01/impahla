@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react'
 import { CalendarDays, ChevronRight, CircleDollarSign, Flower2, Gift, HeartHandshake, MapPin, PackageCheck, Plus, Sparkles, UsersRound } from 'lucide-react'
 import { ContributionRow } from '@/components/contribution-row'
 import { formatKwacha, type Contribution } from '@/lib/contribution-store'
+import { formatEventDate, type EventRecord } from '@/lib/event-store'
 
 type DashboardViewProps = {
   contributions: Contribution[]
@@ -11,12 +12,13 @@ type DashboardViewProps = {
   isReady: boolean
   userName: string
   userRole: 'user' | 'planner' | 'admin'
+  event: EventRecord | null
   onAdd: () => void
   onSelect: (contribution: Contribution) => void
   onViewAll: () => void
 }
 
-export function DashboardView({ contributions, stats, isReady, userName, userRole, onAdd, onSelect, onViewAll }: DashboardViewProps) {
+export function DashboardView({ contributions, stats, isReady, userName, userRole, event, onAdd, onSelect, onViewAll }: DashboardViewProps) {
   const recent = contributions.slice(0, 4)
   const totalCash = stats.receivedCash + stats.promisedCash
   const receivedPercent = totalCash ? Math.round((stats.receivedCash / totalCash) * 100) : 0
@@ -43,16 +45,19 @@ export function DashboardView({ contributions, stats, isReady, userName, userRol
         )}
       </div>
 
-      <article className="event-hero">
+      <article
+        className="event-hero"
+        style={event?.coverImage ? { backgroundImage: `url('${event.coverImage}')`, backgroundPosition: 'center 54%', backgroundSize: 'cover' } : undefined}
+      >
         <div className="event-hero-overlay" />
         <div className="event-hero-content">
           <span className="event-label"><Sparkles aria-hidden="true" />{isPlannerOrCouple ? 'COUPLE & EVENT PLANNER HUB' : 'GUEST CONTRIBUTOR PORTAL'}</span>
-          <h2>Maya&apos;s Kitchen Party</h2>
+          <h2>{event ? event.eventName : isPlannerOrCouple ? 'No events yet' : 'Find an event to support'}</h2>
           <div className="event-meta">
-            <span><CalendarDays aria-hidden="true" />Saturday, 28 November 2026</span>
-            <span><MapPin aria-hidden="true" />Lusaka, Zambia</span>
+            <span><CalendarDays aria-hidden="true" />{event ? formatEventDate(event.eventDate) : 'Date to be announced'}</span>
+            <span><MapPin aria-hidden="true" />{event ? event.location : 'Location to be announced'}</span>
           </div>
-          <p className="sample-data-label"><span />{isPlannerOrCouple ? 'Monitoring all guest contributions & gifts' : 'Your gifts & cash installments'}</p>
+          <p className="sample-data-label"><span />{event ? (isPlannerOrCouple ? 'Monitoring all guest contributions & gifts' : 'Your gifts & cash installments') : isPlannerOrCouple ? 'Create your first event to begin' : 'Discover an open event to contribute'}</p>
         </div>
         <div className="hero-note"><Flower2 className="hero-note-flower" aria-hidden="true" /><span>Made warmer<br />by all of you</span></div>
       </article>

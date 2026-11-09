@@ -1,18 +1,51 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CalendarDays, Check, CircleHelp, Flower2, Gift, LayoutDashboard, LoaderCircle, LogOut, Menu, Plus, Search, ShieldCheck, Settings2, WifiOff, X, Bell } from 'lucide-react'
+import {
+  CalendarDays,
+  Check,
+  CircleHelp,
+  Compass,
+  Flower2,
+  Gift,
+  LayoutDashboard,
+  LoaderCircle,
+  LogOut,
+  Menu,
+  Plus,
+  Search,
+  Settings2,
+  ShieldCheck,
+  WifiOff,
+  X,
+} from 'lucide-react'
 import { ContributionDetailsDialog } from '@/components/contribution-details-dialog'
 import { ContributionFormDialog } from '@/components/contribution-form-dialog'
 import { ContributionListView } from '@/components/contribution-list-view'
+import { ContributeFormView } from '@/components/contribute-form-view'
+import { ContributorDiscoverView } from '@/components/contributor-discover-view'
+import { ContributorEventDetail } from '@/components/contributor-event-detail'
 import { DashboardView } from '@/components/dashboard-view'
+import { EventFormView } from '@/components/event-form-view'
+import { PlannerEventDetail } from '@/components/planner-event-detail'
+import { PlannerEventsView } from '@/components/planner-events-view'
 import { useContributions } from '@/hooks/use-contributions'
+import { formatEventDate, type EventRecord } from '@/lib/event-store'
+import type { Contribution, ContributionType } from '@/lib/contribution-store'
 import type { AuthUser } from '@/lib/auth/session'
-import type { Contribution } from '@/lib/contribution-store'
 
-type View = 'overview' | 'contributions'
+type View =
+  | 'overview'
+  | 'contributions'
+  | 'events'
+  | 'event-detail'
+  | 'event-form'
+  | 'discover'
+  | 'discover-detail'
+  | 'contribute-cash'
+  | 'contribute-gift'
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -32,26 +65,27 @@ export function KitchenPartyApp({ user }: { user: AuthUser }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [notice, setNotice] = useState('')
   const [isSigningOut, setIsSigningOut] = useState(false)
-  const [latestEvent, setLatestEvent] = useState<{ eventName: string; eventType: string; plannerName: string } | null>(null)
+  const [activeEventId, setActiveEventId] = useState<string | null>(null)
+  const [editingEvent, setEditingEvent] = useState<EventRecord | null>(null)
+  const [highlightEvent, setHighlightEvent] = useState<EventRecord | null>(null)
 
   const isPlannerOrCouple = user.role === 'planner' || user.role === 'admin'
 
   useEffect(() => {
-    if (isPlannerOrCouple) return
-    fetch('/api/events')
-      .then((res) => res.json())
+    const url = isPlannerOrCouple ? '/api/events?mine=1' : '/api/events?open=1'
+    fetch(url, { cache: 'no-store' })
+      .then((response) => response.json())
       .then((data) => {
-        if (data.events && Array.isArray(data.events) && data.events.length > 0) {
-          const latest = data.events[data.events.length - 1]
-          setLatestEvent({ eventName: latest.eventName, eventType: latest.eventType, plannerName: latest.plannerName })
-          setNotice(`New Event Listed: ${latest.plannerName}'s ${latest.eventType} (${latest.eventName}). Tap "Add contribution" to select and give!`)
-        }
+        const list = (data.events ?? []) as EventRecord[]
+        setHighlightEvent(list[0] ?? null)
       })
       .catch(() => {})
   }, [isPlannerOrCouple])
 
+  const notify = (message: string) => setNotice(message)
+
   const currentContribution = useMemo(
-    () => selectedContribution ? contributions.find((item) => item.id === selectedContribution.id) ?? null : null,
+    () => (selectedContribution ? contributions.find((item) => item.id === selectedContribution.id) ?? null : null),
     [contributions, selectedContribution],
   )
 
@@ -69,20 +103,20 @@ export function KitchenPartyApp({ user }: { user: AuthUser }) {
 
   const handleSave = async (contribution: Contribution) => {
     const saved = await upsert(contribution)
-    if (saved) setNotice(isPlannerOrCouple ? 'Contribution updated.' : 'Contribution submitted toward selected event.')
+    if (saved) notify(isPlannerOrCouple ? 'Contribution updated.' : 'Contribution submitted toward selected event.')
     return saved
   }
 
-  const markReceived = async (contribution: Contribution) => {
-    const saved = await upsert({ ...contribution, status: 'received' })
-    if (saved) setNotice(`${contribution.name}’s contribution marked received.`)
+  const markContributionReceived = async (contribution: Contribution) => {
+    const saved = await upsert({ ...contribution, contributionStatus: 'received' })
+    if (saved) notify(`${contribution.contributorName}'s contribution marked received.`)
   }
 
   const handleDelete = async (id: string) => {
     const saved = await remove(id)
     if (saved) {
       setSelectedContribution(null)
-      setNotice('Contribution removed.')
+      notify('Contribution removed.')
     }
     return saved
   }
@@ -102,6 +136,44 @@ export function KitchenPartyApp({ user }: { user: AuthUser }) {
     setSidebarOpen(false)
   }
 
+  const openEventDetail = (event: EventRecord) => {
+    setActiveEventId(event.id)
+    setView(isPlannerOrCouple ? 'event-detail' : 'discover-detail')
+    setSidebarOpen(false)
+  }
+
+  const openContribute = (type: ContributionType) => {
+    setView(type === 'cash' ? 'contribute-cash' : 'contribute-gift')
+  }
+
+  const closeEventForm = () => {
+    setEditingEvent(null)
+    setView(isPlannerOrCouple ? 'events' : 'overview')
+  }
+
+  const breadcrumbLabel = (() => {
+    switch (view) {
+      case 'contributions':
+        return isPlannerOrCouple ? 'Guest contributions' : 'My contributions'
+      case 'events':
+        return 'My events'
+      case 'event-detail':
+        return 'Event'
+      case 'event-form':
+        return editingEvent ? 'Edit event' : 'Create event'
+      case 'discover':
+        return 'Discover events'
+      case 'discover-detail':
+        return 'Event'
+      case 'contribute-cash':
+        return 'Contribute cash'
+      case 'contribute-gift':
+        return 'Contribute gift'
+      default:
+        return 'Overview'
+    }
+  })()
+
   return (
     <>
       <div className="app-shell">
@@ -112,6 +184,12 @@ export function KitchenPartyApp({ user }: { user: AuthUser }) {
           <div className="sidebar-section-label">{isPlannerOrCouple ? 'PLANNER HUB' : 'CONTRIBUTOR PORTAL'}</div>
           <nav className="sidebar-nav">
             <button className={`sidebar-nav-item ${view === 'overview' ? 'active' : ''}`} type="button" aria-current={view === 'overview' ? 'page' : undefined} onClick={() => navigate('overview')}><LayoutDashboard aria-hidden="true" /><span>Overview</span></button>
+            {isPlannerOrCouple && (
+              <button className={`sidebar-nav-item ${view === 'events' ? 'active' : ''}`} type="button" aria-current={view === 'events' ? 'page' : undefined} onClick={() => navigate('events')}><CalendarDays aria-hidden="true" /><span>My Events</span></button>
+            )}
+            {!isPlannerOrCouple && (
+              <button className={`sidebar-nav-item ${view === 'discover' ? 'active' : ''}`} type="button" aria-current={view === 'discover' ? 'page' : undefined} onClick={() => navigate('discover')}><Compass aria-hidden="true" /><span>Discover Events</span></button>
+            )}
             <button className={`sidebar-nav-item ${view === 'contributions' ? 'active' : ''}`} type="button" aria-current={view === 'contributions' ? 'page' : undefined} onClick={() => navigate('contributions')}><Gift aria-hidden="true" /><span>{isPlannerOrCouple ? 'Guest Contributions' : 'My Contributions'}</span><span className="nav-count">{contributions.length}</span></button>
             {user.role === 'admin' && (
               <Link className="sidebar-nav-item" href="/admin" onClick={() => setSidebarOpen(false)}><ShieldCheck aria-hidden="true" /><span>Admin console</span></Link>
@@ -119,21 +197,32 @@ export function KitchenPartyApp({ user }: { user: AuthUser }) {
           </nav>
 
           <div className="sidebar-event-card">
-            <span className="event-card-label">{isPlannerOrCouple ? 'MONITORING EVENT' : 'ACTIVE EVENT LISTED'}</span>
+            <span className="event-card-label">{isPlannerOrCouple ? 'LATEST EVENT' : 'OPEN FOR CONTRIBUTIONS'}</span>
             <span className="event-card-symbol"><Flower2 aria-hidden="true" /></span>
-            <strong>{latestEvent ? latestEvent.eventName : "Maya's Kitchen Party"}</strong>
-            <span className="event-card-date"><CalendarDays aria-hidden="true" />28 Nov 2026</span>
-            <span className="event-card-rule" />
-            <span className="event-card-location">{latestEvent ? `Organised by ${latestEvent.plannerName}` : 'NDOLA, ZAMBIA'}</span>
+            <strong>{highlightEvent ? highlightEvent.eventName : isPlannerOrCouple ? 'No events yet' : 'Find an event'}</strong>
+            {highlightEvent ? (
+              <>
+                <span className="event-card-date"><CalendarDays aria-hidden="true" />{formatEventDate(highlightEvent.eventDate)}</span>
+                <span className="event-card-rule" />
+                <span className="event-card-location">{highlightEvent.location.toUpperCase()}</span>
+              </>
+            ) : (
+              <>
+                <span className="event-card-rule" />
+                <span className="event-card-location">{isPlannerOrCouple ? 'CREATE YOUR FIRST EVENT' : 'BROWSE OPEN EVENTS'}</span>
+              </>
+            )}
           </div>
 
-          {!isPlannerOrCouple && (
-            <button className="sidebar-add-button" type="button" onClick={openNewForm}><Plus aria-hidden="true" />Contribute to event</button>
+          {isPlannerOrCouple ? (
+            <button className="sidebar-add-button" type="button" onClick={() => { setEditingEvent(null); setView('event-form'); setSidebarOpen(false) }}><Plus aria-hidden="true" />Create event</button>
+          ) : (
+            <button className="sidebar-add-button" type="button" onClick={() => navigate('discover')}><Compass aria-hidden="true" />Discover events</button>
           )}
 
           <div className="sidebar-bottom">
             <div className="sidebar-offline-card"><span className="offline-indicator">{storageError ? <WifiOff aria-hidden="true" /> : <Check aria-hidden="true" />}</span><span><strong>{storageError ? 'Sync problem' : 'Saved to your account'}</strong><small>{storageError ? 'Your changes may not be saved' : 'Available on any device'}</small></span><span className="online-dot" aria-label="Synced" /></div>
-            <button className="sidebar-help" type="button" onClick={() => setNotice(isPlannerOrCouple ? 'Monitoring mode: track guest gifts and cash installments.' : 'Select an event planner’s listed event to contribute.')}><CircleHelp aria-hidden="true" />Help &amp; privacy</button>
+            <button className="sidebar-help" type="button" onClick={() => setNotice(isPlannerOrCouple ? 'Create events and track guest contributions from one place.' : 'Discover an open event, then record your cash or gift contribution.')}><CircleHelp aria-hidden="true" />Help &amp; privacy</button>
             <div className="organizer-profile"><span className="organizer-avatar">{initialsOf(user.name)}</span><span><strong>{user.name}</strong><small>{user.role === 'planner' ? 'Bride, Groom & Planner' : user.role === 'admin' ? 'Administrator' : 'Contributor'}</small></span><button className="icon-button profile-menu" type="button" aria-label="Sign out" disabled={isSigningOut} onClick={handleSignOut}>{isSigningOut ? <LoaderCircle className="button-spinner" aria-hidden="true" /> : <LogOut aria-hidden="true" />}</button></div>
           </div>
         </aside>
@@ -141,22 +230,67 @@ export function KitchenPartyApp({ user }: { user: AuthUser }) {
         <main className="main-content">
           <header className="topbar">
             <button className="icon-button mobile-menu" type="button" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Menu aria-hidden="true" /></button>
-            <div className="breadcrumb"><span>Workspace</span><span className="breadcrumb-slash">/</span><strong>{view === 'overview' ? 'Overview' : 'Contributions'}</strong></div>
+            <div className="breadcrumb"><span>Workspace</span><span className="breadcrumb-slash">/</span><strong>{breadcrumbLabel}</strong></div>
             <div className="topbar-actions"><span className="topbar-saved">{storageError ? <WifiOff aria-hidden="true" /> : <span className="topbar-check"><Check aria-hidden="true" /></span>}{storageError ? 'Not synced' : isReady ? 'All changes saved' : 'Loading registry'}</span><button className="icon-button topbar-search" type="button" aria-label="Go to contributions" onClick={() => navigate('contributions')}><Search aria-hidden="true" /></button><button className="icon-button topbar-settings" type="button" aria-label="About your account" onClick={() => setNotice(`Signed in as ${user.email}. Role: ${user.role}.`)}><Settings2 aria-hidden="true" /></button></div>
           </header>
 
-          {latestEvent && !isPlannerOrCouple && (
-            <div className="storage-alert" role="status" style={{ background: '#FDFBF7', borderColor: '#D3AE73', color: '#4A3324' }}>
-              <Bell aria-hidden="true" />
-              <span><strong>New Event Listed:</strong> {latestEvent.plannerName} listed a new <strong>{latestEvent.eventType}</strong> (*{latestEvent.eventName}*). Tap &quot;Contribute to event&quot; to select it!</span>
-            </div>
+          {storageError && <div className="storage-alert" role="alert"><WifiOff aria-hidden="true" /><span>{storageError}</span></div>}
+
+          {view === 'overview' && (
+            <DashboardView contributions={contributions} stats={stats} isReady={isReady} userName={user.name} userRole={user.role} event={highlightEvent} onAdd={openNewForm} onSelect={setSelectedContribution} onViewAll={() => navigate('contributions')} />
           )}
 
-          {storageError && <div className="storage-alert" role="alert"><WifiOff aria-hidden="true" /><span>{storageError}</span></div>}
-          {view === 'overview' ? (
-            <DashboardView contributions={contributions} stats={stats} isReady={isReady} userName={user.name} userRole={user.role} onAdd={openNewForm} onSelect={setSelectedContribution} onViewAll={() => navigate('contributions')} />
-          ) : (
+          {view === 'contributions' && (
             <ContributionListView contributions={contributions} onAdd={isPlannerOrCouple ? undefined : openNewForm} onSelect={setSelectedContribution} />
+          )}
+
+          {view === 'events' && (
+            <PlannerEventsView
+              onCreate={() => { setEditingEvent(null); setView('event-form') }}
+              onOpen={openEventDetail}
+            />
+          )}
+
+          {view === 'event-form' && (
+            <EventFormView
+              event={editingEvent}
+              notify={notify}
+              onCancel={closeEventForm}
+              onSaved={(saved) => {
+                setEditingEvent(null)
+                setActiveEventId(saved.id)
+                setView('event-detail')
+              }}
+            />
+          )}
+
+          {view === 'event-detail' && activeEventId && (
+            <PlannerEventDetail
+              eventId={activeEventId}
+              notify={notify}
+              onBack={() => setView('events')}
+              onEdit={(event) => { setEditingEvent(event); setView('event-form') }}
+            />
+          )}
+
+          {view === 'discover' && <ContributorDiscoverView onOpen={openEventDetail} />}
+
+          {view === 'discover-detail' && activeEventId && (
+            <ContributorEventDetail
+              eventId={activeEventId}
+              onBack={() => setView('discover')}
+              onContribute={openContribute}
+            />
+          )}
+
+          {(view === 'contribute-cash' || view === 'contribute-gift') && activeEventId && (
+            <ContributeFormView
+              eventId={activeEventId}
+              type={view === 'contribute-cash' ? 'cash' : 'gift'}
+              notify={notify}
+              onCancel={() => setView('discover-detail')}
+              onDone={() => setView('discover-detail')}
+            />
           )}
 
           <div className="app-bottomline"><span>IMPAHLA APP <span>·</span> {isPlannerOrCouple ? 'EVENT PLANNER & COUPLE MONITORING HUB' : 'CONTRIBUTOR GUEST PORTAL'}</span><span>One event, held with care.</span></div>
@@ -165,7 +299,7 @@ export function KitchenPartyApp({ user }: { user: AuthUser }) {
 
       {notice && <div className="toast-note" role="status"><span className="toast-check"><Check aria-hidden="true" /></span>{notice}<button type="button" className="icon-button toast-close" onClick={() => setNotice('')} aria-label="Dismiss message"><X aria-hidden="true" /></button></div>}
       <ContributionFormDialog open={formOpen} contribution={editingContribution} onClose={() => setFormOpen(false)} onSave={handleSave} />
-      <ContributionDetailsDialog contribution={currentContribution} onClose={() => setSelectedContribution(null)} onEdit={openEditForm} onMarkReceived={markReceived} onDelete={handleDelete} />
+      <ContributionDetailsDialog contribution={currentContribution} onClose={() => setSelectedContribution(null)} onEdit={openEditForm} onMarkReceived={markContributionReceived} onDelete={handleDelete} />
     </>
   )
 }
