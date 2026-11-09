@@ -9,7 +9,6 @@ import type { Contribution, ContributionStatus, ContributionType } from '@/lib/c
 
 const MAX_IMAGE_CHARS = 4_000_000
 const EVENT_CATEGORY_VALUES: EventCategory[] = ['kitchen_party', 'bridal_shower', 'other']
-const EVENT_STATUS_VALUES: EventStatus[] = ['open', 'closed', 'cancelled']
 const CONTRIBUTION_TYPE_VALUES: ContributionType[] = ['cash', 'gift']
 const CONTRIBUTION_STATUS_VALUES: ContributionStatus[] = [
   'pledged',

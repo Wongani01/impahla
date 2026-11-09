@@ -53,6 +53,18 @@
       "eventDate": "2026-11-28",
       "createdAt": "2026-11-09T12:44:29.986Z",
       "updatedAt": "2026-11-09T12:44:29.986Z"
+    },
+    {
+      "id": "8f17740e-e716-4ccc-bc7a-11a7c249099f",
+      "name": "Robert Muntanga",
+      "email": "robertmuntas@gmail.com",
+      "passwordHash": "scrypt$9de40f390cee40a5e33bbfa75b48df6f$37b6520abf2b4ef6f0916f2fc14ef7454ddaeaec1a67ddf8e55beb685763ed31092eabd2e2f30004030fb6e8685582d07e2678c8343bf4f17e9223e24557871c",
+      "role": "planner",
+      "status": "active",
+      "eventName": "Maya's Kitchen Party",
+      "eventDate": "2026-11-28",
+      "createdAt": "2026-11-09T15:07:06.963Z",
+      "updatedAt": "2026-11-09T15:07:06.963Z"
     }
   ],
   "sessions": [
@@ -91,6 +103,12 @@
       "userId": "14e69edf-486c-4562-9a49-3185d82dd7c6",
       "expiresAt": "2026-11-16T13:11:36.782Z",
       "createdAt": "2026-11-09T13:11:36.784Z"
+    },
+    {
+      "id": "e7f2f030231c5476192744945fcfa42ce092d41b29d129b416de2e36feaab790",
+      "userId": "8f17740e-e716-4ccc-bc7a-11a7c249099f",
+      "expiresAt": "2026-11-16T15:07:06.971Z",
+      "createdAt": "2026-11-09T15:07:06.973Z"
     }
   ],
   "contributions": [
