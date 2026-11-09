@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { contributions, users } from '@/lib/db/schema'
+import { checkDatabase } from '@/lib/auth/session'
+import { fallbackStore } from '@/lib/db/fallback-store'
 import type { AdminContribution, Contribution, ContributionStatus } from '@/lib/contribution-store'
 
 export type ContributionInput = {
@@ -85,25 +87,76 @@ const columns = {
 }
 
 export async function listOwnContributions(userId: string): Promise<Contribution[]> {
-  const rows = await db
-    .select(columns)
-    .from(contributions)
-    .where(eq(contributions.userId, userId))
-    .orderBy(desc(contributions.date), desc(contributions.createdAt))
-  return rows.map(toContribution)
+  const online = await checkDatabase().catch(() => false)
+  if (online) {
+    try {
+      const rows = await db
+        .select(columns)
+        .from(contributions)
+        .where(eq(contributions.userId, userId))
+        .orderBy(desc(contributions.date), desc(contributions.createdAt))
+      return rows.map(toContribution)
+    } catch {
+      // fallback
+    }
+  }
+
+  const items = fallbackStore.getContributions(userId)
+  return items.map(toContribution).sort((a, b) => b.date.localeCompare(a.date))
 }
 
 export async function listAllContributions(): Promise<AdminContribution[]> {
-  const rows = await db
-    .select({ ...columns, ownerId: users.id, ownerName: users.name, ownerEmail: users.email })
-    .from(contributions)
-    .innerJoin(users, eq(contributions.userId, users.id))
-    .orderBy(desc(contributions.date), desc(contributions.createdAt))
-  return rows.map((row) => ({ ...toContribution(row), ownerId: row.ownerId, ownerName: row.ownerName, ownerEmail: row.ownerEmail }))
+  const online = await checkDatabase().catch(() => false)
+  if (online) {
+    try {
+      const rows = await db
+        .select({ ...columns, ownerId: users.id, ownerName: users.name, ownerEmail: users.email })
+        .from(contributions)
+        .innerJoin(users, eq(contributions.userId, users.id))
+        .orderBy(desc(contributions.date), desc(contributions.createdAt))
+      return rows.map((row) => ({ ...toContribution(row), ownerId: row.ownerId, ownerName: row.ownerName, ownerEmail: row.ownerEmail }))
+    } catch {
+      // fallback
+    }
+  }
+
+  const items = fallbackStore.getContributions()
+  const usersList = fallbackStore.getUsers()
+  const userMap = new Map(usersList.map((u) => [u.id, u]))
+
+  return items.map((item) => {
+    const owner = userMap.get(item.userId)
+    return {
+      ...toContribution(item),
+      ownerId: item.userId,
+      ownerName: owner?.name ?? 'Unknown',
+      ownerEmail: owner?.email ?? 'unknown@mphatso.local',
+    }
+  }).sort((a, b) => b.date.localeCompare(a.date))
 }
 
 export async function createContribution(userId: string, input: ContributionInput): Promise<Contribution> {
-  await db.insert(contributions).values({
+  const online = await checkDatabase().catch(() => false)
+  if (online) {
+    try {
+      await db.insert(contributions).values({
+        id: input.id,
+        userId,
+        name: input.name,
+        amount: input.amount,
+        gift: input.gift,
+        status: input.status,
+        note: input.note,
+        date: input.date,
+        photo: input.photo,
+      })
+      return toContribution({ ...input, photo: input.photo })
+    } catch {
+      // fallback
+    }
+  }
+
+  fallbackStore.saveContribution({
     id: input.id,
     userId,
     name: input.name,
@@ -123,29 +176,68 @@ export async function updateContribution(
   isAdmin: boolean,
   input: ContributionInput,
 ): Promise<Contribution | null> {
-  const where = isAdmin ? eq(contributions.id, id) : and(eq(contributions.id, id), eq(contributions.userId, actorId))
-  const existing = await db.select({ id: contributions.id }).from(contributions).where(where).limit(1)
-  if (!existing.length) return null
+  const online = await checkDatabase().catch(() => false)
+  if (online) {
+    try {
+      const where = isAdmin ? eq(contributions.id, id) : and(eq(contributions.id, id), eq(contributions.userId, actorId))
+      const existing = await db.select({ id: contributions.id }).from(contributions).where(where).limit(1)
+      if (existing.length) {
+        await db
+          .update(contributions)
+          .set({
+            name: input.name,
+            amount: input.amount,
+            gift: input.gift,
+            status: input.status,
+            note: input.note,
+            date: input.date,
+            photo: input.photo,
+          })
+          .where(eq(contributions.id, id))
+        return toContribution({ ...input, id })
+      }
+    } catch {
+      // fallback
+    }
+  }
 
-  await db
-    .update(contributions)
-    .set({
-      name: input.name,
-      amount: input.amount,
-      gift: input.gift,
-      status: input.status,
-      note: input.note,
-      date: input.date,
-      photo: input.photo,
-    })
-    .where(eq(contributions.id, id))
+  const items = fallbackStore.getContributions()
+  const target = items.find((c) => c.id === id)
+  if (!target) return null
+  if (!isAdmin && target.userId !== actorId) return null
+
+  fallbackStore.saveContribution({
+    ...target,
+    name: input.name,
+    amount: input.amount,
+    gift: input.gift,
+    status: input.status,
+    note: input.note,
+    date: input.date,
+    photo: input.photo,
+  })
   return toContribution({ ...input, id })
 }
 
 export async function deleteContribution(id: string, actorId: string, isAdmin: boolean): Promise<boolean> {
-  const where = isAdmin ? eq(contributions.id, id) : and(eq(contributions.id, id), eq(contributions.userId, actorId))
-  const existing = await db.select({ id: contributions.id }).from(contributions).where(where).limit(1)
-  if (!existing.length) return false
-  await db.delete(contributions).where(eq(contributions.id, id))
+  const online = await checkDatabase().catch(() => false)
+  if (online) {
+    try {
+      const where = isAdmin ? eq(contributions.id, id) : and(eq(contributions.id, id), eq(contributions.userId, actorId))
+      const existing = await db.select({ id: contributions.id }).from(contributions).where(where).limit(1)
+      if (existing.length) {
+        await db.delete(contributions).where(eq(contributions.id, id))
+        return true
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  const items = fallbackStore.getContributions()
+  const target = items.find((c) => c.id === id)
+  if (!target) return false
+  if (!isAdmin && target.userId !== actorId) return false
+  fallbackStore.deleteContribution(id)
   return true
 }

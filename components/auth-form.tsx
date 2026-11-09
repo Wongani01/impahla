@@ -56,8 +56,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         return
       }
       const target = data.user?.role === 'admin' ? '/admin' : '/dashboard'
-      router.replace(target)
-      router.refresh()
+      window.location.href = target
     } catch {
       setError('Could not reach the server. Please try again.')
       setIsSubmitting(false)
