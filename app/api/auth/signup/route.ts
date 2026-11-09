@@ -20,6 +20,9 @@ export async function POST(request: Request) {
   const name = readString(body?.name)
   const email = normalizeEmail(body?.email)
   const password = typeof body?.password === 'string' ? body.password : ''
+  const role = body?.role === 'planner' || body?.role === 'admin' ? body.role : 'planner'
+  const eventName = readString(body?.eventName) || "Maya's Kitchen Party"
+  const eventDate = readString(body?.eventDate) || '28 Nov 2026'
 
   if (name.length < 2) return apiError('Please enter your full name.')
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return apiError('Please enter a valid email address.')
@@ -38,11 +41,13 @@ export async function POST(request: Request) {
       name,
       email,
       passwordHash: hashed,
-      role: 'user',
+      role,
       status: 'active',
+      eventName,
+      eventDate,
     })
     await createSession(id)
-    return NextResponse.json({ user: { id, name, email, role: 'user', status: 'active' } }, { status: 201 })
+    return NextResponse.json({ user: { id, name, email, role, status: 'active', eventName, eventDate } }, { status: 201 })
   }
 
   try {
@@ -55,12 +60,14 @@ export async function POST(request: Request) {
       name,
       email,
       passwordHash: await hashPassword(password),
-      role: 'user',
+      role,
       status: 'active',
+      eventName,
+      eventDate,
     })
 
     await createSession(id)
-    return NextResponse.json({ user: { id, name, email, role: 'user', status: 'active' } }, { status: 201 })
+    return NextResponse.json({ user: { id, name, email, role, status: 'active', eventName, eventDate } }, { status: 201 })
   } catch (error) {
     try {
       const existing = fallbackStore.getUserByEmail(email)
@@ -73,11 +80,13 @@ export async function POST(request: Request) {
         name,
         email,
         passwordHash: hashed,
-        role: 'user',
+        role,
         status: 'active',
+        eventName,
+        eventDate,
       })
       await createSession(id)
-      return NextResponse.json({ user: { id, name, email, role: 'user', status: 'active' } }, { status: 201 })
+      return NextResponse.json({ user: { id, name, email, role, status: 'active', eventName, eventDate } }, { status: 201 })
     } catch (fallbackError) {
       console.error('signup failed', error, fallbackError)
       return apiError('Could not create your account. Please try again.', 500)

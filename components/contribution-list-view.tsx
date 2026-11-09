@@ -9,7 +9,7 @@ type Filter = 'all' | ContributionStatus
 
 type ContributionListViewProps = {
   contributions: Contribution[]
-  onAdd: () => void
+  onAdd?: () => void
   onSelect: (contribution: Contribution) => void
 }
 
@@ -53,7 +53,9 @@ export function ContributionListView({ contributions, onAdd, onSelect }: Contrib
     <section className="contributions-page" aria-labelledby="contributions-heading">
       <div className="page-heading-row">
         <div><p className="section-kicker">YOUR EVENT, ALL IN ONE PLACE</p><h1 id="contributions-heading">Contributions</h1><p className="page-intro">Every promise and every gift, thoughtfully kept.</p></div>
-        <button className="primary-button" type="button" onClick={onAdd}><span className="plus-glyph" aria-hidden="true">+</span>Add contribution</button>
+        {onAdd && (
+          <button className="primary-button" type="button" onClick={onAdd}><span className="plus-glyph" aria-hidden="true">+</span>Add contribution</button>
+        )}
       </div>
 
       <div className="list-summary-strip">
@@ -73,11 +75,17 @@ export function ContributionListView({ contributions, onAdd, onSelect }: Contrib
           </div>
         </div>
         <div className="contribution-table-heading" aria-hidden="true"><span>CONTRIBUTOR</span><span>DATE</span><span>AMOUNT</span><span>STATUS</span><span /></div>
-        {filtered.length ? <div className="contribution-rows">{filtered.map((item) => <ContributionRow key={item.id} contribution={item} onSelect={onSelect} />)}</div> : (
-          <div className="list-empty"><div className="empty-icon"><SlidersHorizontal aria-hidden="true" /></div><h2>{query ? 'No matches found' : filter === 'all' ? 'Your registry is ready' : `No ${filter} contributions yet`}</h2><p>{query ? 'Try another name or gift description.' : 'Add your first contribution to start keeping track.'}</p>{!query && filter === 'all' && <button type="button" className="secondary-button" onClick={onAdd}>Add a contribution</button>}</div>
+        {filtered.length ? (
+          <div className="contribution-rows">
+            {filtered.map((item) => <ContributionRow key={item.id} contribution={item} onSelect={onSelect} />)}
+          </div>
+        ) : (
+          <div className="list-empty">
+            <span className="empty-icon"><UsersRound aria-hidden="true" /></span>
+            <div><strong>No contributions found</strong><p>Try adjusting your search or status filter.</p></div>
+          </div>
         )}
       </div>
-      <p className="list-privacy-note">Your registry is stored privately with your account. The CSV includes only the records shown here.</p>
     </section>
   )
 }

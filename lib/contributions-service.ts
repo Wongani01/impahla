@@ -8,9 +8,15 @@ import type { AdminContribution, Contribution, ContributionStatus } from '@/lib/
 
 export type ContributionInput = {
   id: string
+  eventId: string
   name: string
+  phoneNumber: string
+  contributionType: 'cash' | 'gift'
   amount: number
+  paidAmount: number
   gift: string
+  giftValue: number
+  quantity: number
   status: ContributionStatus
   note: string
   date: string
@@ -23,22 +29,29 @@ export function parseContributionInput(
   raw: unknown,
 ): { ok: true; value: ContributionInput } | { ok: false; error: string } {
   const body = (raw ?? {}) as Record<string, unknown>
+  const eventId = typeof body.eventId === 'string' && body.eventId.length > 0 ? body.eventId : 'default-event'
   const name = typeof body.name === 'string' ? body.name.trim() : ''
+  const phoneNumber = typeof body.phoneNumber === 'string' ? body.phoneNumber.trim() : ''
+  const contributionType = body.contributionType === 'gift' ? 'gift' : 'cash'
   const gift = typeof body.gift === 'string' ? body.gift.trim() : ''
   const note = typeof body.note === 'string' ? body.note.trim() : ''
   const date = typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : ''
-  const status = body.status === 'promised' ? 'promised' : body.status === 'received' ? 'received' : ''
+  const status = (['promised', 'received', 'pledged', 'paid', 'pending_verification', 'confirmed', 'delivered', 'cancelled'].includes(body.status as string)
+    ? body.status
+    : 'received') as ContributionStatus
   const amount = Number(body.amount ?? 0)
+  const paidAmount = Number(body.paidAmount ?? 0)
+  const giftValue = Number(body.giftValue ?? 0)
+  const quantity = Number(body.quantity ?? 1)
   const photo = body.photo
 
   if (name.length < 2) return { ok: false, error: 'Add the contributor’s name.' }
   if (name.length > 120) return { ok: false, error: 'Contributor name is too long.' }
-  if (!Number.isInteger(amount) || amount < 0) return { ok: false, error: 'Enter a valid cash amount.' }
+  if (!Number.isInteger(amount) || amount < 0) return { ok: false, error: 'Enter a valid total cash amount.' }
+  if (!Number.isInteger(paidAmount) || paidAmount < 0) return { ok: false, error: 'Enter a valid paid amount.' }
+  if (paidAmount > amount) return { ok: false, error: 'Paid amount cannot exceed total pledged amount.' }
   if (!status) return { ok: false, error: 'Choose a status for this contribution.' }
   if (!date) return { ok: false, error: 'Choose a valid date.' }
-  if (amount === 0 && !gift) return { ok: false, error: 'Add a cash amount or describe the gift.' }
-  if (gift.length > 255) return { ok: false, error: 'Gift description is too long.' }
-  if (note.length > 2000) return { ok: false, error: 'Note is too long.' }
 
   let resolvedPhoto: string | null = null
   if (typeof photo === 'string' && photo.length > 0) {
@@ -50,14 +63,20 @@ export function parseContributionInput(
 
   const id = typeof body.id === 'string' && body.id.length > 0 ? body.id.slice(0, 36) : randomUUID()
 
-  return { ok: true, value: { id, name, amount, gift, status, note, date, photo: resolvedPhoto } }
+  return { ok: true, value: { id, eventId, name, phoneNumber, contributionType, amount, paidAmount, gift, giftValue, quantity, status, note, date, photo: resolvedPhoto } }
 }
 
 function toContribution(row: {
   id: string
+  eventId?: string
   name: string
+  phoneNumber?: string
+  contributionType?: 'cash' | 'gift'
   amount: number
+  paidAmount?: number
   gift: string
+  giftValue?: number
+  quantity?: number
   status: ContributionStatus
   note: string
   date: string
@@ -65,8 +84,10 @@ function toContribution(row: {
 }): Contribution {
   return {
     id: row.id,
+    eventId: row.eventId ?? 'default-event',
     name: row.name,
     amount: row.amount,
+    paidAmount: row.paidAmount ?? 0,
     gift: row.gift,
     status: row.status,
     note: row.note,
@@ -77,9 +98,15 @@ function toContribution(row: {
 
 const columns = {
   id: contributions.id,
+  eventId: contributions.eventId,
   name: contributions.name,
+  phoneNumber: contributions.phoneNumber,
+  contributionType: contributions.contributionType,
   amount: contributions.amount,
+  paidAmount: contributions.paidAmount,
   gift: contributions.gift,
+  giftValue: contributions.giftValue,
+  quantity: contributions.quantity,
   status: contributions.status,
   note: contributions.note,
   date: contributions.date,
@@ -142,9 +169,15 @@ export async function createContribution(userId: string, input: ContributionInpu
       await db.insert(contributions).values({
         id: input.id,
         userId,
+        eventId: input.eventId,
         name: input.name,
+        phoneNumber: input.phoneNumber,
+        contributionType: input.contributionType,
         amount: input.amount,
+        paidAmount: input.paidAmount,
         gift: input.gift,
+        giftValue: input.giftValue,
+        quantity: input.quantity,
         status: input.status,
         note: input.note,
         date: input.date,
@@ -159,9 +192,15 @@ export async function createContribution(userId: string, input: ContributionInpu
   fallbackStore.saveContribution({
     id: input.id,
     userId,
+    eventId: input.eventId,
     name: input.name,
+    phoneNumber: input.phoneNumber,
+    contributionType: input.contributionType,
     amount: input.amount,
+    paidAmount: input.paidAmount,
     gift: input.gift,
+    giftValue: input.giftValue,
+    quantity: input.quantity,
     status: input.status,
     note: input.note,
     date: input.date,
@@ -185,9 +224,15 @@ export async function updateContribution(
         await db
           .update(contributions)
           .set({
+            eventId: input.eventId,
             name: input.name,
+            phoneNumber: input.phoneNumber,
+            contributionType: input.contributionType,
             amount: input.amount,
+            paidAmount: input.paidAmount,
             gift: input.gift,
+            giftValue: input.giftValue,
+            quantity: input.quantity,
             status: input.status,
             note: input.note,
             date: input.date,
@@ -208,9 +253,15 @@ export async function updateContribution(
 
   fallbackStore.saveContribution({
     ...target,
+    eventId: input.eventId,
     name: input.name,
+    phoneNumber: input.phoneNumber,
+    contributionType: input.contributionType,
     amount: input.amount,
+    paidAmount: input.paidAmount,
     gift: input.gift,
+    giftValue: input.giftValue,
+    quantity: input.quantity,
     status: input.status,
     note: input.note,
     date: input.date,

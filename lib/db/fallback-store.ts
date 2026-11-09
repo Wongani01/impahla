@@ -8,8 +8,10 @@ export type MemoryUser = {
   name: string
   email: string
   passwordHash: string
-  role: 'user' | 'admin'
+  role: 'user' | 'planner' | 'admin'
   status: 'active' | 'disabled'
+  eventName: string
+  eventDate: string
   createdAt: string
   updatedAt: string
 }
@@ -21,13 +23,39 @@ export type MemorySession = {
   createdAt: string
 }
 
+export type MemoryEvent = {
+  id: string
+  plannerId: string
+  plannerName: string
+  eventName: string
+  description: string
+  category: string
+  eventType: string
+  hostName: string
+  eventDate: string
+  eventTime: string
+  venue: string
+  location: string
+  contactInfo: string
+  expectedAttendees: number
+  coverImage: string | null
+  status: 'active' | 'closed' | 'cancelled'
+  createdAt: string
+}
+
 export type MemoryContribution = {
   id: string
   userId: string
+  eventId: string
   name: string
+  phoneNumber: string
+  contributionType: 'cash' | 'gift'
   amount: number
+  paidAmount: number
   gift: string
-  status: 'promised' | 'received'
+  giftValue: number
+  quantity: number
+  status: 'promised' | 'received' | 'pledged' | 'paid' | 'pending_verification' | 'confirmed' | 'delivered' | 'cancelled'
   note: string
   date: string
   photo: string | null
@@ -38,6 +66,7 @@ export type MemoryContribution = {
 type StoreData = {
   users: MemoryUser[]
   sessions: MemorySession[]
+  events: MemoryEvent[]
   contributions: MemoryContribution[]
 }
 
@@ -49,12 +78,14 @@ function ensureStore(): StoreData {
     }
     if (fs.existsSync(STORE_PATH)) {
       const raw = fs.readFileSync(STORE_PATH, 'utf8')
-      return JSON.parse(raw) as StoreData
+      const data = JSON.parse(raw) as StoreData
+      if (!data.events) data.events = []
+      return data
     }
   } catch (e) {
     console.error('Error reading fallback store', e)
   }
-  return { users: [], sessions: [], contributions: [] }
+  return { users: [], sessions: [], events: [], contributions: [] }
 }
 
 function saveStore(data: StoreData) {
@@ -79,6 +110,8 @@ export const fallbackStore = {
     const existingIndex = store.users.findIndex((u) => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase())
     const fullUser: MemoryUser = {
       ...user,
+      eventName: user.eventName ?? "Maya's Kitchen Party",
+      eventDate: user.eventDate ?? '28 Nov 2026',
       createdAt: existingIndex >= 0 ? store.users[existingIndex].createdAt : now,
       updatedAt: now,
     }
@@ -104,6 +137,28 @@ export const fallbackStore = {
     saveStore(store)
   },
 
+  getEvents(): MemoryEvent[] {
+    return ensureStore().events
+  },
+  saveEvent(event: Omit<MemoryEvent, 'createdAt'>) {
+    const store = ensureStore()
+    const now = new Date().toISOString()
+    const index = store.events.findIndex((e) => e.id === event.id)
+    const full: MemoryEvent = {
+      ...event,
+      plannerName: event.plannerName ?? 'Event Planner',
+      eventType: event.eventType ?? event.category ?? 'Kitchen Party',
+      createdAt: index >= 0 ? store.events[index].createdAt : now,
+    }
+    if (index >= 0) {
+      store.events[index] = full
+    } else {
+      store.events.push(full)
+    }
+    saveStore(store)
+    return full
+  },
+
   getContributions(userId?: string): MemoryContribution[] {
     const store = ensureStore()
     if (userId) {
@@ -117,6 +172,9 @@ export const fallbackStore = {
     const index = store.contributions.findIndex((c) => c.id === contribution.id)
     const full: MemoryContribution = {
       ...contribution,
+      eventId: contribution.eventId ?? 'default-event',
+      paidAmount: contribution.paidAmount ?? 0,
+      status: contribution.status ?? 'received',
       createdAt: index >= 0 ? store.contributions[index].createdAt : now,
       updatedAt: now,
     }

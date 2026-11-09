@@ -9,14 +9,88 @@
       "status": "active",
       "createdAt": "2026-11-09T08:29:29.293Z",
       "updatedAt": "2026-11-09T08:29:29.293Z"
+    },
+    {
+      "id": "b10f3311-c1f5-4795-a287-4b78f26b5c22",
+      "name": "test one",
+      "email": "test7@gmail.com",
+      "passwordHash": "scrypt$dc0078aadd083a52b3897baea2da944c$0261fc874a8a3e02423f58257834bd8957be51286273d608d785405c920baec65e1f3498400ea9cf276bc43c52b45aa3858b9340ef6cdb58402c170949cf04f3",
+      "role": "user",
+      "status": "active",
+      "createdAt": "2026-11-09T11:58:14.622Z",
+      "updatedAt": "2026-11-09T11:58:14.622Z"
+    },
+    {
+      "id": "d78677da-a24c-4862-a950-136e16fdf8ed",
+      "name": "bride",
+      "email": "bride1@gmail.com",
+      "passwordHash": "scrypt$3b89f95073654519432ee77da073e3be$2e0e6b737b2f3895ee9dca53effcf4c3d38e8e4326166589154af437501c229203eff7f15ceafa49b1d83f6a63c75384349967a5080812841d963cfdd5c8dba8",
+      "role": "planner",
+      "status": "active",
+      "createdAt": "2026-11-09T12:23:42.272Z",
+      "updatedAt": "2026-11-09T12:23:42.272Z"
+    },
+    {
+      "id": "e5588538-c502-4714-98fa-893dcb4d5f05",
+      "name": "Salifyanji Nambela",
+      "email": "eventplanner@gmail.com",
+      "passwordHash": "scrypt$112c2ee5b7f69c7266a1d955e2f2ea10$d92fd1d373e583ca011c7ab2339b0238dead20ef4894af4c73adec06c5e0c403acc7ccb90e06e6f024e1e4da492140f9badcf2427e1d857b4887b0d3e9da794a",
+      "role": "planner",
+      "status": "active",
+      "eventName": "Salifyanji",
+      "eventDate": "2027-02-02",
+      "createdAt": "2026-11-09T12:36:13.457Z",
+      "updatedAt": "2026-11-09T12:36:13.457Z"
+    },
+    {
+      "id": "14e69edf-486c-4562-9a49-3185d82dd7c6",
+      "name": "lok",
+      "email": "adming2@gmail.com",
+      "passwordHash": "scrypt$b1ecc38bf942dde092039f7b1a4d1367$0a1955264aa6c2ca6bf7b7038cdbc9ab214f1059bcb51925ee09f5942183f5b5c2247eef868f78ba01f39c64fd738cb602cb053f18a50557aea18ec0894628b9",
+      "role": "planner",
+      "status": "active",
+      "eventName": "polivvv",
+      "eventDate": "2026-11-28",
+      "createdAt": "2026-11-09T12:44:29.986Z",
+      "updatedAt": "2026-11-09T12:44:29.986Z"
     }
   ],
   "sessions": [
     {
-      "id": "181fe43a679c351e4a06ce875c892e9773967d132b2d18e89cfd68933574e02a",
-      "userId": "e8e7ff94-15b2-439f-b577-45afd85c28e0",
-      "expiresAt": "2026-11-16T08:29:29.294Z",
-      "createdAt": "2026-11-09T08:29:29.296Z"
+      "id": "d986be33beb9bfae84dcb8d2f078f4284d23a06121a5652d19e32e086ac7376e",
+      "userId": "d78677da-a24c-4862-a950-136e16fdf8ed",
+      "expiresAt": "2026-11-16T12:23:42.273Z",
+      "createdAt": "2026-11-09T12:23:42.276Z"
+    },
+    {
+      "id": "b2eea3f7c57ab8915c3319bfa008f35c709b68692771ef66f64a48115fe493e7",
+      "userId": "b10f3311-c1f5-4795-a287-4b78f26b5c22",
+      "expiresAt": "2026-11-16T12:36:51.268Z",
+      "createdAt": "2026-11-09T12:36:51.270Z"
+    },
+    {
+      "id": "7b2bf8595b95431751be323240ec65be2fe8272aa754afcb375bf5a05426a137",
+      "userId": "b10f3311-c1f5-4795-a287-4b78f26b5c22",
+      "expiresAt": "2026-11-16T12:43:19.897Z",
+      "createdAt": "2026-11-09T12:43:19.899Z"
+    },
+    {
+      "id": "40ddf18118e24bcbadc64368647b74bc7975b73c70d78cf2c5ca3d5e03b89350",
+      "userId": "14e69edf-486c-4562-9a49-3185d82dd7c6",
+      "expiresAt": "2026-11-16T12:53:42.460Z",
+      "createdAt": "2026-11-09T12:53:42.463Z"
+    },
+    {
+      "id": "2016fda07d860d6fcaa60b4ee947ae608ff1efb519d4eec4f4d256b61eab3258",
+      "userId": "b10f3311-c1f5-4795-a287-4b78f26b5c22",
+      "expiresAt": "2026-11-16T12:54:42.606Z",
+      "createdAt": "2026-11-09T12:54:42.607Z"
+    },
+    {
+      "id": "77b220b273ec2f3c842b703385236148e18fd05f1c966525fe43d35f55dd3d0b",
+      "userId": "14e69edf-486c-4562-9a49-3185d82dd7c6",
+      "expiresAt": "2026-11-16T13:11:36.782Z",
+      "createdAt": "2026-11-09T13:11:36.784Z"
     }
   ],
   "contributions": [
@@ -33,5 +107,6 @@
       "createdAt": "2026-11-09T09:15:30.119Z",
       "updatedAt": "2026-11-09T09:15:30.119Z"
     }
-  ]
+  ],
+  "events": []
 }

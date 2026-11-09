@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `name`          VARCHAR(120) NOT NULL,
   `email`         VARCHAR(190) NOT NULL,
   `password_hash` VARCHAR(255) NOT NULL,
-  `role`          ENUM('user','admin')   NOT NULL DEFAULT 'user',
+  `role`          ENUM('user','planner','admin')   NOT NULL DEFAULT 'user',
   `status`        ENUM('active','disabled') NOT NULL DEFAULT 'active',
   `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

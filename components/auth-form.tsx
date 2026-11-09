@@ -12,7 +12,7 @@ type AuthFormProps = {
 }
 
 type AuthUser = {
-  role: 'user' | 'admin'
+  role: 'user' | 'planner' | 'admin'
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
@@ -20,6 +20,10 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [role, setRole] = useState<'planner' | 'user'>('planner')
+  const [eventName, setEventName] = useState("Maya's Kitchen Party")
+  const [eventDate, setEventDate] = useState('2026-11-28')
+  const [invitedBy, setInvitedBy] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -31,6 +35,10 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     if (isSignup && name.trim().length < 2) {
       setError('Please enter your full name.')
+      return
+    }
+    if (isSignup && role === 'planner' && !eventName.trim()) {
+      setError('Please enter your event name.')
       return
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -47,7 +55,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       const response = await fetch(isSignup ? '/api/auth/signup' : '/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isSignup ? { name: name.trim(), email: email.trim(), password } : { email: email.trim(), password }),
+        body: JSON.stringify(isSignup ? { name: name.trim(), email: email.trim(), password, role, eventName: eventName.trim(), eventDate, invitedBy: invitedBy.trim() } : { email: email.trim(), password }),
       })
       const data = (await response.json().catch(() => ({}))) as { error?: string; user?: AuthUser }
       if (!response.ok) {
@@ -81,20 +89,86 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           {isSignup && (
-            <label className="form-field">
-              <span>Full name</span>
-              <span className="auth-input-wrap">
-                <UserRound aria-hidden="true" />
-                <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="e.g. Chanda Phiri"
-                  autoComplete="name"
-                  maxLength={120}
-                  required
-                />
-              </span>
-            </label>
+            <>
+              <label className="form-field">
+                <span>Account Type</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
+                  <button
+                    type="button"
+                    className={`secondary-button ${role === 'planner' ? 'is-selected' : ''}`}
+                    onClick={() => setRole('planner')}
+                    style={{ justifyContent: 'flex-start', padding: '10px 12px', height: 'auto', textAlign: 'left', borderColor: role === 'planner' ? '#800020' : undefined, background: role === 'planner' ? '#FDFBF7' : undefined }}
+                  >
+                    <span>
+                      <strong style={{ display: 'block', color: '#111827' }}>Event Planner</strong>
+                      <small style={{ color: '#374151', display: 'block', fontSize: '10px' }}>Groom, Bride & Planner</small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`secondary-button ${role === 'user' ? 'is-selected' : ''}`}
+                    onClick={() => setRole('user')}
+                    style={{ justifyContent: 'flex-start', padding: '10px 12px', height: 'auto', textAlign: 'left', borderColor: role === 'user' ? '#800020' : undefined, background: role === 'user' ? '#FDFBF7' : undefined }}
+                  >
+                    <span>
+                      <strong style={{ display: 'block', color: '#111827' }}>Contributor</strong>
+                      <small style={{ color: '#374151', display: 'block', fontSize: '10px' }}>Guest gifting</small>
+                    </span>
+                  </button>
+                </div>
+              </label>
+
+              {role === 'planner' && (
+                <div className="form-grid">
+                  <label className="form-field">
+                    <span>Event Name</span>
+                    <input
+                      value={eventName}
+                      onChange={(event) => setEventName(event.target.value)}
+                      placeholder="e.g. Maya's Kitchen Party"
+                      maxLength={120}
+                      required
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Event Date</span>
+                    <input
+                      type="date"
+                      value={eventDate}
+                      onChange={(event) => setEventDate(event.target.value)}
+                      required
+                    />
+                  </label>
+                </div>
+              )}
+
+              {role === 'user' && (
+                <label className="form-field">
+                  <span>Event Planner / Couple Email <span className="optional-label">Optional invitation</span></span>
+                  <input
+                    type="email"
+                    value={invitedBy}
+                    onChange={(event) => setInvitedBy(event.target.value)}
+                    placeholder="planner@example.com"
+                  />
+                </label>
+              )}
+
+              <label className="form-field">
+                <span>Full name</span>
+                <span className="auth-input-wrap">
+                  <UserRound aria-hidden="true" />
+                  <input
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="e.g. Chanda Phiri"
+                    autoComplete="name"
+                    maxLength={120}
+                    required
+                  />
+                </span>
+              </label>
+            </>
           )}
 
           <label className="form-field">
