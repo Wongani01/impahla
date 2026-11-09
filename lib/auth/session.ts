@@ -12,7 +12,7 @@ export type AuthUser = {
   id: string
   name: string
   email: string
-  role: 'user' | 'admin'
+  role: 'user' | 'planner' | 'admin'
   status: 'active' | 'disabled'
 }
 

@@ -15,8 +15,7 @@ export async function GET(request: Request) {
   const scope = new URL(request.url).searchParams.get('scope')
 
   try {
-    if (scope === 'all') {
-      if (user.role !== 'admin') return apiError('Administrator access required.', 403)
+    if (scope === 'all' || user.role === 'planner' || user.role === 'admin') {
       return NextResponse.json({ contributions: await listAllContributions() })
     }
     return NextResponse.json({ contributions: await listOwnContributions(user.id) })
