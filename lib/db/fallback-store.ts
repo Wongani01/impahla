@@ -74,6 +74,78 @@ type StoreData = {
   contributions: MemoryContribution[]
 }
 
+/** Pre-v2 contribution rows stored with the old column names. */
+type LegacyContribution = Partial<MemoryContribution> & {
+  userId?: string | null
+  name?: string
+  amount?: number
+  gift?: string
+  status?: string
+  photo?: string | null
+}
+
+const CONTRIBUTION_STATUSES = new Set<MemoryContribution['contributionStatus']>([
+  'pledged',
+  'paid',
+  'pending_verification',
+  'confirmed',
+  'delivered',
+  'received',
+  'cancelled',
+])
+
+const LEGACY_STATUS_MAP: Record<string, MemoryContribution['contributionStatus']> = {
+  promised: 'pledged',
+  received: 'confirmed',
+}
+
+/**
+ * Upgrades pre-v2 contribution rows to the current shape, mirroring db/schema.sql
+ * (amount → cashAmount, gift → giftDescription, promised → pledged, received → confirmed).
+ * Rows with no event to attach to cannot be migrated and are skipped.
+ */
+function migrateContributionRows(rows: LegacyContribution[]): MemoryContribution[] {
+  const migrated: MemoryContribution[] = []
+  let skipped = 0
+
+  for (const row of rows) {
+    if (typeof row.contributorName === 'string' && typeof row.eventId === 'string') {
+      migrated.push(row as MemoryContribution)
+      continue
+    }
+    if (!row.id || !row.eventId) {
+      skipped += 1
+      continue
+    }
+    const legacyStatus = typeof row.status === 'string' ? LEGACY_STATUS_MAP[row.status] ?? row.status : 'pledged'
+    migrated.push({
+      id: row.id,
+      eventId: row.eventId,
+      contributorId: row.contributorId ?? row.userId ?? null,
+      contributorName: row.name ?? 'Unknown contributor',
+      phoneNumber: row.phoneNumber ?? '',
+      contributionType: row.contributionType ?? (row.gift ? 'gift' : 'cash'),
+      cashAmount: row.cashAmount ?? row.amount ?? 0,
+      giftDescription: row.giftDescription ?? row.gift ?? '',
+      giftValue: row.giftValue ?? null,
+      quantity: row.quantity ?? 1,
+      giftImage: row.giftImage ?? row.photo ?? null,
+      note: row.note ?? '',
+      contributionStatus: CONTRIBUTION_STATUSES.has(legacyStatus as MemoryContribution['contributionStatus'])
+        ? (legacyStatus as MemoryContribution['contributionStatus'])
+        : 'pledged',
+      date: row.date ?? '',
+      createdAt: row.createdAt ?? new Date().toISOString(),
+      updatedAt: row.updatedAt ?? new Date().toISOString(),
+    })
+  }
+
+  if (skipped > 0) {
+    console.warn(`[fallback-store] Skipped ${skipped} contribution(s) that could not be migrated (no event to attach to).`)
+  }
+  return migrated
+}
+
 function ensureStore(): StoreData {
   try {
     const dir = path.dirname(STORE_PATH)
@@ -84,7 +156,7 @@ function ensureStore(): StoreData {
       const raw = fs.readFileSync(STORE_PATH, 'utf8')
       const data = JSON.parse(raw) as StoreData
       if (!data.events) data.events = []
-      if (!data.contributions) data.contributions = []
+      data.contributions = data.contributions ? migrateContributionRows(data.contributions as LegacyContribution[]) : []
       return data
     }
   } catch (e) {
