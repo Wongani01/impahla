@@ -15,22 +15,18 @@ import { getCurrentUser } from '@/lib/auth/session'
 
 const features = [
   {
-    icon: Gift,
     title: 'Every gift, remembered',
     body: 'Log cash, groceries, décor and every promise — each with a note and a photo so nothing slips away.',
   },
   {
-    icon: HeartHandshake,
     title: 'Promised vs received',
     body: 'See at a glance what has landed and what is still on its way, so follow-ups feel gentle, not pushy.',
   },
   {
-    icon: BarChart3,
     title: 'A clear running total',
     body: 'Live totals in Zambian Kwacha, contributor counts and outstanding gifts, updated as you go.',
   },
   {
-    icon: ShieldCheck,
     title: 'Private to your account',
     body: 'Your registry is tied to your sign-in, protected by securely hashed passwords and private sessions.',
   },
@@ -114,9 +110,8 @@ export default async function LandingPage() {
         <p className="landing-section-kicker">WHY IMPAHLA APP</p>
         <h2>Built for the people who hold the day together</h2>
         <div className="landing-feature-grid">
-          {features.map(({ icon: Icon, title, body }) => (
+          {features.map(({ title, body }) => (
             <article className="landing-feature-card" key={title}>
-              <span className="landing-feature-icon"><Icon aria-hidden="true" /></span>
               <h3>{title}</h3>
               <p>{body}</p>
             </article>

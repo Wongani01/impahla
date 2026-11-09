@@ -159,8 +159,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .page-heading-row h1 em { color: #856c7c; font-weight: 400; }
 .page-intro { margin: 9px 0 0; color: #877d85; font-size: 11px; line-height: 1.55; }
 .primary-button, .secondary-button { display: inline-flex; min-height: 39px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 8px; padding: 0 15px; border: 1px solid transparent; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
-.primary-button { color: #fffaf4; background: #4b3448; box-shadow: 0 3px 9px #4b34481a; }
-.primary-button:hover { background: #5c4158; box-shadow: 0 5px 14px #4b344826; transform: translateY(-1px); }
+.primary-button { color: #FFFFFF; background: #DC2626; box-shadow: 0 3px 9px #DC26261a; }
+.primary-button:hover { background: #B91C1C; box-shadow: 0 5px 14px #DC262626; transform: translateY(-1px); }
 .primary-button:disabled, .secondary-button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 .primary-button svg, .secondary-button svg { width: 15px; height: 15px; }
 .secondary-button { border-color: #e7e0d8; color: #574b55; background: #fffdfa; }
@@ -562,16 +562,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .landing-hero-badge small svg { width: 11px; height: 11px; }
 
 .landing-features, .landing-how { width: min(100% - 36px, 1180px); margin: 0 auto; padding: clamp(34px, 5vw, 66px) 0; }
-.landing-features { border-top: 1px solid #eee8e0; }
-.landing-section-kicker { margin: 0 0 11px; color: #a0774a; font-size: 11px; font-weight: 700; letter-spacing: 1.55px; }
-.landing-features h2, .landing-how h2 { margin: 0; color: #382a37; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(24px, 3vw, 34px); font-weight: 400; letter-spacing: -1px; line-height: 1.15; }
+.landing-features { background: #FFFFFF; border-top: 1px solid #E5E7EB; }
+.landing-section-kicker { margin: 0 0 11px; color: #DC2626; font-size: 11px; font-weight: 700; letter-spacing: 1.55px; }
+.landing-features h2, .landing-how h2 { margin: 0; color: #111827; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(24px, 3vw, 34px); font-weight: 400; letter-spacing: -1px; line-height: 1.15; }
 .landing-feature-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; margin-top: 30px; }
-.landing-feature-card { padding: 22px 20px; border: 1px solid #ebe5dd; border-radius: 15px; background: var(--white); transition: box-shadow .18s ease, transform .18s ease; }
-.landing-feature-card:hover { box-shadow: 0 16px 34px #3c263612; transform: translateY(-2px); }
-.landing-feature-icon { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid #eadfd0; border-radius: 12px; color: #a77b43; background: #f8f1e6; }
-.landing-feature-icon svg { width: 19px; height: 19px; stroke-width: 1.75; }
-.landing-feature-card h3 { margin: 17px 0 8px; color: #453644; font-family: Georgia, 'Times New Roman', serif; font-size: 17px; font-weight: 400; letter-spacing: -.25px; }
-.landing-feature-card p { margin: 0; color: #857b84; font-size: 12px; line-height: 1.6; }
+.landing-feature-card { padding: 22px 20px; border: 1px solid #E5E7EB; border-radius: 16px; background: #FFFFFF; transition: box-shadow .18s ease, transform .18s ease; }
+.landing-feature-card:hover { box-shadow: 0 16px 34px #11182712; transform: translateY(-2px); }
+.landing-feature-card h3 { margin: 0 0 8px; color: #111827; font-family: Georgia, 'Times New Roman', serif; font-size: 17px; font-weight: 400; letter-spacing: -.25px; }
+.landing-feature-card p { margin: 0; color: #374151; font-size: 12px; line-height: 1.6; }
 
 .landing-how { border-top: 1px solid #eee8e0; }
 .landing-how-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; margin-top: 30px; }
