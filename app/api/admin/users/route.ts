@@ -22,7 +22,7 @@ export async function GET() {
         contributionCount: count(contributions.id),
       })
       .from(users)
-      .leftJoin(contributions, eq(contributions.userId, users.id))
+      .leftJoin(contributions, eq(contributions.contributorId, users.id))
       .groupBy(users.id)
       .orderBy(desc(users.createdAt))
 

@@ -1,5 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
+  date,
+  foreignKey,
   index,
   int,
   mediumtext,
@@ -34,57 +36,73 @@ export const sessions = mysqlTable(
   (table) => [index('idx_sessions_user').on(table.userId)],
 )
 
-export const events = mysqlTable('events', {
-  id: varchar('id', { length: 36 }).primaryKey(),
-  plannerId: varchar('planner_id', { length: 36 }).notNull(),
-  plannerName: varchar('planner_name', { length: 120 }).notNull().default('Event Planner'),
-  eventName: varchar('event_name', { length: 160 }).notNull(),
-  description: text('description').notNull().default(''),
-  category: varchar('category', { length: 60 }).notNull().default('Kitchen Party'),
-  eventType: varchar('event_type', { length: 60 }).notNull().default('Kitchen Party'),
-  hostName: varchar('host_name', { length: 120 }).notNull().default(''),
-  eventDate: varchar('event_date', { length: 20 }).notNull().default('2026-11-28'),
-  eventTime: varchar('event_time', { length: 20 }).notNull().default('14:00'),
-  venue: varchar('venue', { length: 160 }).notNull().default(''),
-  location: varchar('location', { length: 160 }).notNull().default('Lusaka, Zambia'),
-  contactInfo: varchar('contact_info', { length: 100 }).notNull().default(''),
-  expectedAttendees: int('expected_attendees').notNull().default(50),
-  coverImage: mediumtext('cover_image'),
-  status: mysqlEnum('status', ['active', 'closed', 'cancelled']).notNull().default('active'),
-  createdAt: timestamp('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-})
+export const events = mysqlTable(
+  'events',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    plannerId: varchar('planner_id', { length: 36 }).notNull(),
+    eventName: varchar('event_name', { length: 160 }).notNull(),
+    description: text('description').notNull(),
+    category: mysqlEnum('category', ['kitchen_party', 'bridal_shower', 'other']).notNull().default('kitchen_party'),
+    hostName: varchar('host_name', { length: 120 }).notNull(),
+    eventDate: date('event_date').notNull(),
+    eventTime: varchar('event_time', { length: 8 }).notNull(),
+    venue: varchar('venue', { length: 160 }).notNull(),
+    location: varchar('location', { length: 255 }).notNull(),
+    contactInfo: varchar('contact_info', { length: 120 }).notNull(),
+    expectedAttendees: int('expected_attendees').notNull().default(0),
+    coverImage: mediumtext('cover_image'),
+    status: mysqlEnum('status', ['open', 'closed', 'cancelled']).notNull().default('open'),
+    createdAt: timestamp('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).onUpdateNow(),
+  },
+  (table) => [
+    index('idx_events_planner').on(table.plannerId),
+    index('idx_events_status').on(table.status),
+    foreignKey({ name: 'fk_events_planner', columns: [table.plannerId], foreignColumns: [users.id] }).onDelete('cascade'),
+  ],
+)
 
 export const contributions = mysqlTable(
   'contributions',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
-    userId: varchar('user_id', { length: 36 }).notNull(),
-    eventId: varchar('event_id', { length: 36 }).notNull().default('default-event'),
-    name: varchar('name', { length: 120 }).notNull(),
-    phoneNumber: varchar('phone_number', { length: 30 }).notNull().default(''),
-    contributionType: mysqlEnum('contribution_type', ['cash', 'gift']).notNull().default('cash'),
-    amount: int('amount').notNull().default(0),
-    paidAmount: int('paid_amount').notNull().default(0),
-    gift: varchar('gift', { length: 255 }).notNull().default(''),
-    giftValue: int('gift_value').notNull().default(0),
+    eventId: varchar('event_id', { length: 36 }).notNull(),
+    contributorId: varchar('contributor_id', { length: 36 }),
+    contributorName: varchar('contributor_name', { length: 120 }).notNull(),
+    phoneNumber: varchar('phone_number', { length: 30 }).notNull(),
+    contributionType: mysqlEnum('contribution_type', ['cash', 'gift']).notNull(),
+    cashAmount: int('cash_amount').notNull().default(0),
+    giftDescription: varchar('gift_description', { length: 255 }).notNull().default(''),
+    giftValue: int('gift_value'),
     quantity: int('quantity').notNull().default(1),
-    status: mysqlEnum('status', [
-      'promised',
-      'received',
+    giftImage: mediumtext('gift_image'),
+    note: text('note').notNull(),
+    contributionStatus: mysqlEnum('contribution_status', [
       'pledged',
       'paid',
       'pending_verification',
       'confirmed',
       'delivered',
+      'received',
       'cancelled',
-    ]).notNull().default('received'),
-    note: text('note').notNull().default(''),
+    ]).notNull().default('pledged'),
     date: varchar('date', { length: 10 }).notNull(),
-    photo: mediumtext('photo'),
     createdAt: timestamp('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).onUpdateNow(),
   },
-  (table) => [index('idx_contributions_user').on(table.userId), index('idx_contributions_event').on(table.eventId)],
+  (table) => [
+    index('idx_contributions_event').on(table.eventId),
+    index('idx_contributions_status').on(table.contributionStatus),
+    foreignKey({ name: 'fk_contributions_event', columns: [table.eventId], foreignColumns: [events.id] }).onDelete(
+      'cascade',
+    ),
+    foreignKey({
+      name: 'fk_contributions_contributor',
+      columns: [table.contributorId],
+      foreignColumns: [users.id],
+    }).onDelete('set null'),
+  ],
 )
 
 export const siteContent = mysqlTable('site_content', {
