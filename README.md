@@ -165,6 +165,18 @@ Two concepts the team taught itself, and how they were used in this project.
 - **`timingSafeEqual` throws on unequal lengths.** If a stored hash was ever corrupted or truncated, the comparison would crash. We now check the buffer length first and fail the comparison safely instead.
 - **Session lookups depend on MySQL.** So that the app still works when the database is unavailable during development, we added a fallback store that keeps sessions and users in a local JSON file, while MySQL remains the source of truth when it is reachable.
 
+### Concept 3 — Native Android Wrapping with Capacitor
+
+**What it is.** Capacitor (`@capacitor/android`) is a cross-platform native runtime that packages a web application inside a native Android `WebView` container. Instead of rewriting the user interface in XML or Jetpack Compose, Capacitor exposes native Android lifecycle hooks and bridge APIs while rendering the web app inside a standard Android Studio Gradle project (`android/`).
+
+**Why our app needs it.** *Impahla* is built as a Next.js full-stack application with server-side API routes and database sessions, while the project brief requires a working Android app built and run through Android Studio. Capacitor bridges that gap by wrapping the application into a native Android shell so guests and planners can launch and use the registry directly on an Android phone or emulator.
+
+**Where we learned it.** The official Capacitor documentation (`capacitorjs.com/docs/android`) for Android project configuration and live-server reloading, and the Android Developers documentation for `adb reverse` port forwarding.
+
+**What went wrong, and how we fixed it.**
+
+- **Static bundle limitations with Next.js API routes.** Packaging a static export broke authentication and database calls because the app relies on server-side Next.js route handlers. We solved this by configuring `server.url` in `capacitor.config.ts` (via `CAP_SERVER_URL`) so the Android WebView connects directly to the running Next.js server.
+- **Emulator localhost routing.** Running the Android emulator could not resolve `localhost:3000` on the host machine, resulting in connection refused errors. We fixed this by mapping the port over USB/ADB using `adb reverse tcp:3000 tcp:3000` and syncing the native wrapper via `pnpm cap:sync`.
 ---
 
 ## Sources
@@ -174,3 +186,5 @@ Two concepts the team taught itself, and how they were used in this project.
 - Node.js crypto documentation — https://nodejs.org/api/crypto.html
 - OWASP Password Storage Cheat Sheet — https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 - Next.js documentation — https://nextjs.org/docs
+- Capacitor Android documentation — https://capacitorjs.com/docs/android
+- Android Debug Bridge (`adb`) documentation — https://developer.android.com/tools/adb
